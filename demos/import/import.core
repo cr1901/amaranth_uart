@@ -1,0 +1,9 @@
+CAPI=2:
+
+name : cr1901:amaranth:uart-import:0
+
+# This is unused at the moment/subject to change.
+filesets:
+  amaranth_uart_dep:
+    depend:
+      [cr1901:amaranth:uart]

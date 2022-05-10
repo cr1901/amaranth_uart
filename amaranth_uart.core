@@ -1,0 +1,16 @@
+CAPI=2:
+
+name : cr1901:amaranth:uart:0
+
+filesets:
+  # No special way to expose a Python core to be used by Amaranth in CAPI,
+  # so abuse filesets.
+  module:
+    file_type: pythonModule
+    files:
+      - uart
+
+# This is unused at the moment/subject to change.
+targets:
+  default:
+    filesets: [module]
