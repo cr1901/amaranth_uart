@@ -57,6 +57,6 @@ if __name__ == "__main__":
 
     p = icebreaker.ICEBreakerPlatform()
     p.add_resources(p.break_off_pmod)
-    plan = p.build(top, do_build=False)
+    plan = p.build(top, do_build=False, debug_verilog=True)
     products = plan.execute_local(run_script=True)
     p.toolchain_program(products, "top")
