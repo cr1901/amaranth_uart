@@ -50,10 +50,10 @@ def sim_shift_in():
 
         yield stop_take.eq(1)
         yield from write_data(0xAA)
-        assert (yield shift_in._view.read.payload == 0xAA)
+        assert (yield shift_in.data == 0xAA)
 
         yield from shift_bit(1)
-        assert (yield shift_in._view.read.payload == 0xAA)
+        assert (yield shift_in.data == 0xAA)
 
         yield stop_take.eq(0)
         for _ in range(3):
@@ -73,16 +73,7 @@ def sim_shift_out():
     sim = Simulator(shift_out)
     sim.add_clock(1.0 / 12e6)
 
-    # def take_proc():
-    #     yield Passive()
-    #     while True:
-    #         if (yield shift_out.ready) and not (yield stop_take) and not (yield shift_out.ready):  # noqa: E501
-    #             yield shift_out.valid.eq(1)
-    #         else:
-    #             yield shift_out..eq(0)
-    #         yield
-
-    def in_proc():
+    def out_proc():
         def shift_bit():
             # Shift
             yield shift_out.shift.eq(1)
@@ -105,7 +96,7 @@ def sim_shift_out():
 
         assert (yield shift_out.ready == 1)
 
-    sim.add_sync_process(in_proc)
+    sim.add_sync_process(out_proc)
 
     with sim.write_vcd("shift_out.vcd", "shift_out.gtkw"):
         sim.run()
