@@ -88,8 +88,7 @@ class ShiftOut(Elaboratable):
 # Core we want to share with the world. Must be visible in __init__.py due
 # to importlib limitations.
 class Core(Elaboratable):
-    def __init__(self, divider: Optional[int] = None,
-                 reset_on_brk: bool = False):
+    def __init__(self, divisor: Optional[int] = None):
         self.out = Signal(1)
 
         self.tx = Signal(1)
@@ -104,8 +103,10 @@ class Core(Elaboratable):
         self.rx_tready = Signal(1)
         self.rx_tdata = Signal(8)
 
-        self.divider = divider
-        self.reset_on_brk = reset_on_brk
+        if divisor:
+            self.divisor = C(divisor, 16)
+        else:
+            self.divisor = Signal(16)
         self.counter = Signal(range(12000000))
 
     def elaborate(self, platform):

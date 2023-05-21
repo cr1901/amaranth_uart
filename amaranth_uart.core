@@ -12,6 +12,8 @@ filesets:
 
 # This is unused at the moment/subject to change. At present causes a
 # PermissionsError trying to read a directory (uart).
+# FIXME: The loopback example breaks with this uncommented. But the imp
+# example requires it :(.
 # targets:
 #   default:
 #     filesets: [module]
@@ -20,5 +22,23 @@ generators:
   amaranth_uart_gen:
     interpreter: python3
     command: gen_entry.py
-    usage: |
-      Generate a simple UART.
+    description: |
+      Generate a simple UART with configurable divisor. For a
+      given clock rate and desired baud rate, the `divisor` parameter is
+      calculated by: (clk_rate)/(16*baud_rate).
+
+      The generated core ports are:
+      tx, rx, brk, tx_tvalid, tx_tready, [7:0] tx_tdata, rx_tvalid, rx_tready,
+      [7:0] rx_tdata, clk, rst.
+
+      {RX, TX}_T{DATA, VALID, READY} are AXI Stream interfaces.
+
+      If `divisor` is `null`, an additional "[15:0] divisor" is generated.
+      This allows setting the divisor at runtime (or via Verilog parameter
+      using a wrapper).
+
+      parameters:
+        divisor (int or `null`): Divisor used to set baud rate. Controls how
+        many clock cycles to wait before incrementing internal timers. If
+        `divisor` is `null`, a 16-bit width port to supply the divisor is
+        generated instead. Defaults to `null`.
