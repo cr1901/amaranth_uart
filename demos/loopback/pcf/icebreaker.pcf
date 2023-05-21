@@ -1,0 +1,3 @@
+set_io tx 9
+set_io rx 6
+set_frequency clk 12.0

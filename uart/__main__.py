@@ -1,7 +1,9 @@
 from .core import *
+from .gen import *
 from .sim import *
 
 import argparse
+import sys
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -9,6 +11,9 @@ if __name__ == "__main__":
 
     s_args = p_action.add_parser("sim")
     s_args.add_argument("target", choices=["all", "shift_in", "shift_out"])
+
+    g_args = p_action.add_parser("gen")
+    g_args.add_argument("yaml_file")
 
     args = parser.parse_args()
     if args.action == "sim":
@@ -22,3 +27,10 @@ if __name__ == "__main__":
                 sf()
         else:
             sim_funcs[args.target]()
+    elif args.action == "gen":
+        # Pop the "gen" argument of the script because FuseSoC is hardcoded
+        # to look at sys.argv[1].
+        sys.argv[1] = sys.argv[2]
+        ug = UartGenerator()
+        ug.run()
+        ug.write()

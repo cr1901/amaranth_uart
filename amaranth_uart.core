@@ -10,7 +10,15 @@ filesets:
     files:
       - uart
 
-# This is unused at the moment/subject to change.
-targets:
-  default:
-    filesets: [module]
+# This is unused at the moment/subject to change. At present causes a
+# PermissionsError trying to read a directory (uart).
+# targets:
+#   default:
+#     filesets: [module]
+
+generators:
+  amaranth_uart_gen:
+    interpreter: python3
+    command: gen_entry.py
+    usage: |
+      Generate a simple UART.

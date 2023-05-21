@@ -1,3 +1,4 @@
+from typing import Optional
 from amaranth import *
 from amaranth.lib import data
 
@@ -87,8 +88,24 @@ class ShiftOut(Elaboratable):
 # Core we want to share with the world. Must be visible in __init__.py due
 # to importlib limitations.
 class Core(Elaboratable):
-    def __init__(self):
+    def __init__(self, divider: Optional[int] = None,
+                 reset_on_brk: bool = False):
         self.out = Signal(1)
+
+        self.tx = Signal(1)
+        self.rx = Signal(1)
+        self.brk = Signal(1)
+
+        self.tx_tvalid = Signal(1)
+        self.tx_tready = Signal(1)
+        self.tx_tdata = Signal(8)
+
+        self.rx_tvalid = Signal(1)
+        self.rx_tready = Signal(1)
+        self.rx_tdata = Signal(8)
+
+        self.divider = divider
+        self.reset_on_brk = reset_on_brk
         self.counter = Signal(range(12000000))
 
     def elaborate(self, platform):

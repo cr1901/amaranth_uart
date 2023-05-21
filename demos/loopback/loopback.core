@@ -1,0 +1,28 @@
+CAPI=2:
+
+name : cr1901:amaranth:uart-loopback:0
+
+filesets:
+  amaranth_uart_dep:
+    depend:
+      - cr1901:amaranth:uart
+
+  icebreaker:
+    files:
+      - pcf/icebreaker.pcf
+    file_type: PCF
+
+targets:
+  icebreaker:
+    default_tool : icestorm
+    filesets : [amaranth_uart_dep, icebreaker]
+    generate : [icebreaker]
+    tools:
+      icestorm:
+        nextpnr_options: [--up5k, --package sg48]
+        pnr: next
+    toplevel : uart
+
+generate:
+  icebreaker:
+    generator: amaranth_uart_gen
