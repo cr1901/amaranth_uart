@@ -1,6 +1,4 @@
-import argparse
 import importlib
-import os
 import sys
 
 from amaranth import *
@@ -34,7 +32,7 @@ class FuseSocImporter:
         self.cm = CoreManager(self.cfg)
 
         for library in self.cfg.libraries:
-            self.cm.add_library(library)
+            self.cm.add_library(library, [])
 
     def import_(self, name):
         vlnv = Vlnv(name)
@@ -42,7 +40,7 @@ class FuseSocImporter:
 
         # To be reworked. Need a consistent way to refer to fusesoc python
         # modules inside the core config?
-        module = core.filesets["module"].files[0].name
+        module = core.get_files({})[0]["name"]
         # Can files_root be repurposed for "path to the module"?
         sys.path.append(core.files_root)
 
