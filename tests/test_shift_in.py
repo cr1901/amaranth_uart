@@ -1,13 +1,14 @@
-from .core import *
-
+import pytest
 from amaranth import *
-from amaranth.sim import Simulator, Passive
+from amaranth.sim import Passive
+
+from uart.core import *
 
 
-def sim_shift_in():
-    shift_in = ShiftIn()
-    sim = Simulator(shift_in)
-    sim.add_clock(1.0 / 12e6)
+@pytest.mark.module(ShiftIn())
+@pytest.mark.clks((1.0 / 12e6,))
+def test_shift_in(sim_mod):
+    sim, shift_in = sim_mod
 
     stop_take = Signal(1)
 
@@ -61,42 +62,4 @@ def sim_shift_in():
 
         assert (yield shift_in.valid == 0)
 
-    sim.add_sync_process(in_proc)
-    sim.add_sync_process(take_proc)
-
-    with sim.write_vcd("shift_in.vcd", "shift_in.gtkw"):
-        sim.run()
-
-
-def sim_shift_out():
-    shift_out = ShiftOut()
-    sim = Simulator(shift_out)
-    sim.add_clock(1.0 / 12e6)
-
-    def out_proc():
-        def shift_bit():
-            # Shift
-            yield shift_out.shift.eq(1)
-            yield
-
-            # Pause- make sure bit shifted out takes effect.
-            yield shift_out.shift.eq(0)
-            yield
-
-        yield shift_out.data.eq(0xAA)
-        yield shift_out.valid.eq(1)
-        yield
-        yield shift_out.valid.eq(0)
-        yield
-
-        assert (yield shift_out.ready == 0)
-
-        for _ in range(11):
-            yield from shift_bit()
-
-        assert (yield shift_out.ready == 1)
-
-    sim.add_sync_process(out_proc)
-
-    with sim.write_vcd("shift_out.vcd", "shift_out.gtkw"):
-        sim.run()
+    sim.run(sync_processes=[in_proc, take_proc])
