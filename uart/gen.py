@@ -26,3 +26,9 @@ class UartGenerator(Generator):
             fp.write(str(verilog.convert(m, name="uart", ports=ios)))
 
         return [{"uart.v": {"file_type": "verilogSource"}}]
+
+
+def generate_fusesoc_core():
+    ug = UartGenerator()
+    ug.run()
+    ug.write()

@@ -3,3 +3,4 @@ demos/*/build/
 fusesoc.conf
 *.gtkw
 *.vcd
+.pytest_cache/

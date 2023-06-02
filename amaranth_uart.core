@@ -21,7 +21,7 @@ filesets:
 generators:
   amaranth_uart_gen:
     interpreter: python3
-    command: gen_entry.py
+    command: fusesoc_gen.py
     description: |
       Generate a simple UART with configurable divisor. For a
       given clock rate and desired baud rate, the `divisor` parameter is
