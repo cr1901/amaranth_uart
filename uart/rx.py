@@ -8,7 +8,7 @@ from amaranth import *
 
 class ShiftIn(Elaboratable):
     def __init__(self):
-        self.rx = Signal(1)
+        self.rx = Signal(1, reset=1)
 
         self.num_data_bits = Signal(NumDataBits)
         self.parity = Signal(Parity)
@@ -46,7 +46,7 @@ class ShiftIn(Elaboratable):
             ]
 
         # Highest priority b/c it's bad to lose data!
-        with m.If(self.shift_fsm.wr_out):
+        with m.If(self.shift_fsm.wr_out & self.divider_tick):
             m.d.sync += [
                 self.data.eq(self.shift_fsm.shreg),
                 self.status.eq(self.shift_fsm.status),
@@ -63,7 +63,7 @@ class ShiftInFSM(Elaboratable):
     """
     def __init__(self):
         self.rx = Signal(1)
-        self.shreg = Signal(1)
+        self.shreg = Signal(8)
 
         self.num_data_bits = Signal(NumDataBits)
         self.parity = Signal(Parity)
@@ -88,7 +88,7 @@ class ShiftInFSM(Elaboratable):
 
         # Internal signals.
         parity_error = Signal.like(rx_parity)
-        rx_prev = Signal.like(self.rx)
+        rx_prev = Signal.like(self.rx, reset=1)
         rclk_count = Signal(4)
         rclk_bias = Signal(4)
 

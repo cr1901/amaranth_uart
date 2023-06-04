@@ -22,34 +22,31 @@ def test_shift_in(sim_mod):
                 yield shift_in.rd_data.eq(0)
             yield
 
+    def div_proc():
+        yield Passive()
+        while True:
+            yield shift_in.divider_tick.eq(0)
+            for _ in range(1):
+                yield
+
+            yield shift_in.divider_tick.eq(1)
+            yield
+
     def in_proc():
         def init():
+            yield shift_in.rx.eq(1)
             yield shift_in.num_data_bits.eq(NumDataBits.EIGHT)
             yield shift_in.parity.eq(Parity.const({"enabled": 0}))
+            yield
 
         def shift_bit(bit):
             # Prepare sample
             yield shift_in.rx.eq(bit)
-            yield shift_in.divider_tick.eq(1)
-            yield
 
-            # Do sample
-            yield shift_in.divider_tick.eq(0)
-            yield
-
-            # Prepare shift
-            yield shift_in.divider_tick.eq(1)
-            yield
-
-            # Do shift
-            yield shift_in.divider_tick.eq(0)
-            yield
+            for _ in range(32):
+                yield
 
         def write_data(dat):
-            # Before Start
-            yield shift_in.rx.eq(1)
-            yield
-
             # Start
             yield from shift_bit(0)
 
@@ -75,5 +72,8 @@ def test_shift_in(sim_mod):
             yield
 
         assert (yield shift_in.status.ready == 0)
+        assert (yield shift_in.status.overrun == 0)
+        assert (yield shift_in.status.brk == 0)
+        assert (yield shift_in.status.frame == 0)
 
-    sim.run(sync_processes=[in_proc, take_proc])
+    sim.run(sync_processes=[in_proc, div_proc, take_proc])
