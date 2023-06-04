@@ -5,7 +5,7 @@ from amaranth.sim import Simulator
 
 class SimulatorFixture:
     def __init__(self, mod, clks, req):
-        self.name = req.function.__name__
+        self.name = req.node.name
         self.sim = Simulator(mod.args[0])
 
         for clk in clks.args[0]:

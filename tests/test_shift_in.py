@@ -8,7 +8,8 @@ from uart.rx import *
 
 @pytest.mark.module(ShiftIn())
 @pytest.mark.clks((1.0 / 12e6,))
-def test_shift_in(sim_mod):
+@pytest.mark.parametrize("rx_data", [0xAA, 0x55, 0x00, 0xFF])
+def test_shift_in(sim_mod, rx_data):
     sim, shift_in = sim_mod
 
     stop_take = Signal(1, reset=1)
@@ -61,11 +62,11 @@ def test_shift_in(sim_mod):
 
         yield from init()
 
-        yield from write_data(0xAA)
-        assert (yield shift_in.data == 0xAA)
+        yield from write_data(rx_data)
+        assert (yield shift_in.data == rx_data)
 
         yield from shift_bit(1)
-        assert (yield shift_in.data == 0xAA)
+        assert (yield shift_in.data == rx_data)
 
         yield stop_take.eq(0)
         for _ in range(3):
