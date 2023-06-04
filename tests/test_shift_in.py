@@ -2,7 +2,8 @@ import pytest
 from amaranth import *
 from amaranth.sim import Passive
 
-from uart.core import *
+from uart.params import *
+from uart.rx import *
 
 
 @pytest.mark.module(ShiftIn())
@@ -10,31 +11,43 @@ from uart.core import *
 def test_shift_in(sim_mod):
     sim, shift_in = sim_mod
 
-    stop_take = Signal(1)
+    stop_take = Signal(1, reset=1)
 
     def take_proc():
         yield Passive()
         while True:
-            if (yield shift_in.valid) and not (yield stop_take) and not (yield shift_in.ready):  # noqa: E501
-                yield shift_in.ready.eq(1)
+            if (yield shift_in.status.ready) and not (yield stop_take):  # noqa: E501
+                yield shift_in.rd_data.eq(1)
             else:
-                yield shift_in.ready.eq(0)
+                yield shift_in.rd_data.eq(0)
             yield
 
     def in_proc():
+        def init():
+            yield shift_in.num_data_bits.eq(NumDataBits.EIGHT)
+            yield shift_in.parity.eq(Parity.const({"enabled": 0}))
+
         def shift_bit(bit):
-            # Shift
-            yield shift_in.shift.eq(1)
-            yield shift_in.inp.eq(bit)
+            # Prepare sample
+            yield shift_in.rx.eq(bit)
+            yield shift_in.divider_tick.eq(1)
             yield
 
-            # Pause- make sure bit shifted in takes effect.
-            yield shift_in.shift.eq(0)
+            # Do sample
+            yield shift_in.divider_tick.eq(0)
+            yield
+
+            # Prepare shift
+            yield shift_in.divider_tick.eq(1)
+            yield
+
+            # Do shift
+            yield shift_in.divider_tick.eq(0)
             yield
 
         def write_data(dat):
             # Before Start
-            yield shift_in.inp.eq(1)
+            yield shift_in.rx.eq(1)
             yield
 
             # Start
@@ -49,7 +62,8 @@ def test_shift_in(sim_mod):
             # Stop
             yield from shift_bit(1)
 
-        yield stop_take.eq(1)
+        yield from init()
+
         yield from write_data(0xAA)
         assert (yield shift_in.data == 0xAA)
 
@@ -60,6 +74,6 @@ def test_shift_in(sim_mod):
         for _ in range(3):
             yield
 
-        assert (yield shift_in.valid == 0)
+        assert (yield shift_in.status.ready == 0)
 
     sim.run(sync_processes=[in_proc, take_proc])
