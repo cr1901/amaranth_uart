@@ -128,3 +128,49 @@ def test_shift_in(sim_mod, rx_data, div_proc, shift_bit, write_data):
         assert (yield shift_in.status.frame == 0)
 
     sim.run(sync_processes=[in_proc, div_proc, take_proc])
+
+
+@pytest.mark.module(ShiftIn())
+@pytest.mark.clks((1.0 / 12e6,))
+@pytest.mark.parametrize("data_size,rx_bit_period,tx_bit_period",
+                         zip(NumDataBits,
+                             repeat(375000),
+                             repeat(375000)),
+                         indirect=["rx_bit_period", "tx_bit_period"])
+def test_data_width(sim_mod, data_size, div_proc, shift_bit, write_data):
+    sim, shift_in = sim_mod
+
+    stop_take = Signal(1, reset=1)
+
+    def take_proc():
+        yield Passive()
+        while True:
+            if (yield shift_in.status.ready) and not (yield stop_take):  # noqa: E501
+                yield shift_in.rd_data.eq(1)
+            else:
+                yield shift_in.rd_data.eq(0)
+            yield
+
+    def in_proc():
+        def init():
+            yield shift_in.num_data_bits.eq(data_size)
+            yield shift_in.parity.eq(Parity.const({"enabled": 0}))
+            yield
+
+        yield from init()
+
+        yield from write_data(0xff)
+        yield stop_take.eq(0)
+        for _ in range(3):
+            yield
+
+        if data_size == NumDataBits.FIVE:
+            assert (yield shift_in.data == 0b00011111)
+        elif data_size == NumDataBits.SIX:
+            assert (yield shift_in.data == 0b00111111)
+        elif data_size == NumDataBits.SEVEN:
+            assert (yield shift_in.data == 0b01111111)
+        else:
+            assert (yield shift_in.data == 0xff)
+
+    sim.run(sync_processes=[in_proc, div_proc, take_proc])

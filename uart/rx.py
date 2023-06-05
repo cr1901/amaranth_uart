@@ -48,10 +48,15 @@ class ShiftIn(Elaboratable):
         # Highest priority b/c it's bad to lose data!
         with m.If(self.shift_fsm.wr_out & self.divider_tick):
             m.d.sync += [
-                self.data.eq(self.shift_fsm.shreg),
                 self.status.eq(self.shift_fsm.status),
                 self.status.overrun.eq(self.status.ready & ~self.rd_data)
             ]
+
+            with m.Switch(self.num_data_bits):
+                for bits in NumDataBits:
+                    with m.Case(bits.value):
+                        valid = slice(3 - bits.value, None)
+                        m.d.sync += self.data.eq(self.shift_fsm.shreg[valid])
 
         return m
 
