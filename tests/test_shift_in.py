@@ -307,6 +307,7 @@ def test_frame(sim_mod, take_proc, div_proc, write_data, stop_take,
         assert (yield shift_in.status.ready == 0)
         assert (yield shift_in.status.frame == 1)
 
+        # Also test clearing status bits here.
         yield shift_in.rd_status.eq(1)
         yield
         yield shift_in.rd_status.eq(0)
@@ -328,3 +329,35 @@ def test_frame(sim_mod, take_proc, div_proc, write_data, stop_take,
                 assert False
 
     sim.run(sync_processes=[in_proc, div_proc, take_proc, write_proc])
+
+
+@pytest.mark.module(ShiftIn())
+@pytest.mark.clks((1.0 / 12e6,))
+@pytest.mark.parametrize("rx_bit_period,tx_bit_period",
+                         ((375000, 375000),),
+                         indirect=["rx_bit_period", "tx_bit_period"])
+def test_break(sim_mod, take_proc, div_proc, shift_bit, stop_take, init):
+    sim, shift_in = sim_mod
+
+    def in_proc():
+        yield from init()
+
+        for _ in range(10):
+            yield from shift_bit(0)
+
+        assert (yield shift_in.status.ready == 0)
+        assert (yield shift_in.status.brk == 0)
+
+        yield from shift_bit(1)
+
+        assert (yield shift_in.status.ready == 1)
+        assert (yield shift_in.status.brk == 1)
+
+        yield stop_take.eq(0)
+        for _ in range(3):
+            yield
+
+        assert (yield shift_in.status.ready == 0)
+        assert (yield shift_in.status.brk == 1)
+
+    sim.run(sync_processes=[in_proc, div_proc, take_proc])
