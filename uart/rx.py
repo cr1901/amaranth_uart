@@ -105,8 +105,8 @@ class ShiftInFSM(Elaboratable):
             rx_negedge.eq(~self.rx & rx_prev),
             # Anticipate that the sample should happen at the end of the
             # _next_ cycle, hence "-1".
-            sample_imminent.eq(rclk_count == (rclk_bias + 7 - 1)),
-            shift_imminent.eq(rclk_count == (rclk_bias + 15 - 1)),
+            sample_imminent.eq(rclk_count == (rclk_bias + 7 - 1)[:4]),
+            shift_imminent.eq(rclk_count == (rclk_bias + 15 - 1)[:4]),
         ]
         m.d.sync += [
             rx_prev.eq(self.rx),
@@ -121,7 +121,7 @@ class ShiftInFSM(Elaboratable):
                 # parity, and we calculate whether there's a parity error
                 # before the STOP bit.
                 rx_parity.eq(rx_parity + self.rx),
-                rx_zero.eq(~(rx_zero | self.rx))
+                rx_zero.eq(rx_zero & ~self.rx)
             ]
 
         with m.If(shift):
@@ -140,7 +140,7 @@ class ShiftInFSM(Elaboratable):
             ]
 
             # If we're trying to schedule an RX due to frame error, go straight
-            # to START state. Assume line went low once cycle before it was
+            # to START state. Assume line went low one cycle before it was
             # detected (two cycles before this one).
             # Else: Schedule sample at 8 clock cycles from now.
             with m.If(self.status.frame):

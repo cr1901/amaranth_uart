@@ -267,3 +267,97 @@ def test_parity(sim_mod, data_and_parity_status, take_proc, div_proc,
             assert (yield shift_in.data == expected_data)
 
     sim.run(sync_processes=[in_proc, div_proc, take_proc])
+
+
+@pytest.mark.module(ShiftIn())
+@pytest.mark.clks((1.0 / 12e6,))
+@pytest.mark.parametrize("rx_bit_period,tx_bit_period",
+                         ((375000, 375000 * 0.9),
+                          (375000, 375000 * 1.10)),
+                         indirect=["rx_bit_period", "tx_bit_period"])
+def test_frame(sim_mod, take_proc, div_proc, write_data, stop_take):
+    sim, shift_in = sim_mod
+
+    def write_proc():
+        yield Passive()
+        while True:
+            yield from write_data(0x55)
+
+    def in_proc():
+        def init():
+            yield shift_in.num_data_bits.eq(NumDataBits.EIGHT)
+            yield shift_in.parity.eq(Parity.const({"enabled": 0}))
+            yield
+
+        yield from init()
+
+        yield stop_take.eq(0)
+        while (yield shift_in.status.ready == 0):
+            yield
+
+        for _ in range(3):
+            yield
+
+        assert (yield shift_in.status.ready == 0)
+        assert (yield shift_in.status.frame == 1)
+
+        yield shift_in.rd_status.eq(1)
+        yield
+        yield shift_in.rd_status.eq(0)
+        yield
+
+        # Test that another byte is shifted in as we attempt to recover from
+        # a frame error.
+        for _ in range(500):
+            if (yield shift_in.status.ready == 1):
+                break
+            yield
+        else:
+            assert False
+
+    sim.run(sync_processes=[in_proc, div_proc, take_proc, write_proc])
+
+
+@pytest.mark.module(ShiftIn())
+@pytest.mark.clks((1.0 / 12e6,))
+@pytest.mark.parametrize("rx_bit_period,tx_bit_period",
+                         ((375000, 375000 * 0.9),),
+                         indirect=["rx_bit_period", "tx_bit_period"])
+def test_frame_start_glitch(sim_mod, take_proc, div_proc, write_data,
+                            stop_take):
+    sim, shift_in = sim_mod
+
+    def write_proc():
+        yield from write_data(0x55)
+
+    def in_proc():
+        def init():
+            yield shift_in.num_data_bits.eq(NumDataBits.EIGHT)
+            yield shift_in.parity.eq(Parity.const({"enabled": 0}))
+            yield
+
+        yield from init()
+
+        yield stop_take.eq(0)
+        while (yield shift_in.status.ready == 0):
+            yield
+
+        for _ in range(3):
+            yield
+
+        assert (yield shift_in.status.ready == 0)
+        assert (yield shift_in.status.frame == 1)
+
+        yield shift_in.rd_status.eq(1)
+        yield
+        yield shift_in.rd_status.eq(0)
+        yield
+
+        # Test that the start bit detected during the frame error was a glitch
+        # and that no further bytes are received.
+        for _ in range(500):
+            if (yield shift_in.status.ready == 1):
+                assert False
+            yield
+
+    sim.run(sync_processes=[in_proc, div_proc, take_proc, write_proc])
